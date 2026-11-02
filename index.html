@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenHASP Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand"><span class="mdi mdi-tablet-dashboard"></span> OpenHASP Editor</div>
+    <input id="projectName" class="project-name" title="Nom du projet" spellcheck="false">
+    <select id="modeSelect" title="Cible de l'export">
+      <option value="krissvia">Page perso Krissvia (page 5)</option>
+      <option value="openhasp">pages.jsonl openHASP complet</option>
+    </select>
+    <span id="dirty" class="dirty"></span>
+    <div class="sep"></div>
+    <button data-cmd="new" title="Nouveau projet"><span class="mdi mdi-file-outline"></span></button>
+    <button data-cmd="open" title="Ouvrir un projet (.ohe.json) ou un JSONL"><span class="mdi mdi-folder-open-outline"></span></button>
+    <button data-cmd="save" title="Enregistrer le projet (Ctrl+S)"><span class="mdi mdi-content-save-outline"></span></button>
+    <button data-cmd="export" class="primary" title="Télécharger le JSONL"><span class="mdi mdi-download"></span> JSONL</button>
+    <button data-cmd="copy-jsonl" title="Copier le JSONL dans le presse-papiers"><span class="mdi mdi-content-copy"></span></button>
+    <div class="sep"></div>
+    <button data-cmd="undo" title="Annuler (Ctrl+Z)"><span class="mdi mdi-undo"></span></button>
+    <button data-cmd="redo" title="Rétablir (Ctrl+Y)"><span class="mdi mdi-redo"></span></button>
+    <div class="sep"></div>
+    <button data-cmd="zoom-out" title="Zoom arrière"><span class="mdi mdi-magnify-minus-outline"></span></button>
+    <span id="zoomLabel" class="zoom-label">100 %</span>
+    <button data-cmd="zoom-in" title="Zoom avant"><span class="mdi mdi-magnify-plus-outline"></span></button>
+    <button data-cmd="zoom-fit" title="Ajuster à la fenêtre"><span class="mdi mdi-fit-to-screen-outline"></span></button>
+    <button data-cmd="zoom-100" title="Taille réelle">1:1</button>
+    <div class="spacer"></div>
+    <label class="chk" title="Afficher la grille"><input type="checkbox" id="gridShow" checked> Grille</label>
+    <label class="chk" title="Aimanter à la grille (Alt pendant le déplacement pour désactiver)"><input type="checkbox" id="gridSnap" checked> Aimant</label>
+    <input id="gridSize" type="number" min="1" max="100" value="5" title="Pas de la grille (px)">
+  </header>
+
+  <div id="body">
+    <aside id="left">
+      <section>
+        <h3>Composants</h3>
+        <div id="palette" class="palette"></div>
+        <p class="hint">Clic : ajoute au centre · glisser : pose à l'endroit voulu</p>
+      </section>
+      <section>
+        <h3>Disposition</h3>
+        <div class="tools">
+          <button data-cmd="align-left" title="Aligner à gauche"><span class="mdi mdi-align-horizontal-left"></span></button>
+          <button data-cmd="align-hcenter" title="Centrer horizontalement"><span class="mdi mdi-align-horizontal-center"></span></button>
+          <button data-cmd="align-right" title="Aligner à droite"><span class="mdi mdi-align-horizontal-right"></span></button>
+          <button data-cmd="align-top" title="Aligner en haut"><span class="mdi mdi-align-vertical-top"></span></button>
+          <button data-cmd="align-vcenter" title="Centrer verticalement"><span class="mdi mdi-align-vertical-center"></span></button>
+          <button data-cmd="align-bottom" title="Aligner en bas"><span class="mdi mdi-align-vertical-bottom"></span></button>
+          <button data-cmd="dist-h" title="Répartir horizontalement (3 objets ou plus)"><span class="mdi mdi-distribute-horizontal-center"></span></button>
+          <button data-cmd="dist-v" title="Répartir verticalement (3 objets ou plus)"><span class="mdi mdi-distribute-vertical-center"></span></button>
+          <button data-cmd="same-w" title="Même largeur que le premier sélectionné"><span class="mdi mdi-arrow-expand-horizontal"></span></button>
+          <button data-cmd="same-h" title="Même hauteur que le premier sélectionné"><span class="mdi mdi-arrow-expand-vertical"></span></button>
+        </div>
+        <p class="hint">Un seul objet : aligné sur l'écran (ou son parent).</p>
+      </section>
+      <section>
+        <h3>Ordre &amp; édition</h3>
+        <div class="tools">
+          <button data-cmd="to-front" title="Premier plan (fin du fichier)"><span class="mdi mdi-arrange-bring-to-front"></span></button>
+          <button data-cmd="forward" title="Avancer d'un cran"><span class="mdi mdi-arrange-bring-forward"></span></button>
+          <button data-cmd="backward" title="Reculer d'un cran"><span class="mdi mdi-arrange-send-backward"></span></button>
+          <button data-cmd="to-back" title="Arrière-plan (début du fichier)"><span class="mdi mdi-arrange-send-to-back"></span></button>
+          <button data-cmd="duplicate" title="Dupliquer (Ctrl+D)"><span class="mdi mdi-content-duplicate"></span></button>
+          <button data-cmd="delete" class="danger" title="Supprimer (Suppr)"><span class="mdi mdi-delete-outline"></span></button>
+        </div>
+        <p class="hint">L'ordre des lignes du JSONL est l'ordre d'empilement.</p>
+      </section>
+      <section class="keys">
+        <h3>Raccourcis</h3>
+        <ul>
+          <li><kbd>Flèches</kbd> déplacer de 1 px, <kbd>Maj</kbd> : du pas de grille</li>
+          <li><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd>/<kbd>D</kbd> copier, coller, dupliquer</li>
+          <li><kbd>Ctrl</kbd>+molette : zoom · <kbd>Espace</kbd>+glisser : défiler</li>
+          <li><kbd>Maj</kbd>+clic : sélection multiple</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main id="center">
+      <canvas id="rulerH" class="ruler h"></canvas>
+      <canvas id="rulerV" class="ruler v"></canvas>
+      <div id="rulerCorner"></div>
+      <div id="viewport">
+        <div id="stage">
+          <div id="screen"></div>
+          <div id="overlay"></div>
+        </div>
+      </div>
+      <footer id="statusbar">
+        <span id="statusCursor">x — y —</span>
+        <span id="statusSel"></span>
+        <span class="spacer"></span>
+        <span id="statusScreen"></span>
+      </footer>
+    </main>
+
+    <aside id="right">
+      <nav id="tabs">
+        <button data-tab="props" class="active">Propriétés</button>
+        <button data-tab="outline">Plan</button>
+        <button data-tab="pages">Pages</button>
+        <button data-tab="code">JSONL</button>
+        <button data-tab="check">Vérif <span id="issueBadge" class="badge"></span></button>
+      </nav>
+      <div id="panel-props" class="panel active"></div>
+      <div id="panel-outline" class="panel"></div>
+      <div id="panel-pages" class="panel"></div>
+      <div id="panel-code" class="panel"></div>
+      <div id="panel-check" class="panel"></div>
+    </aside>
+  </div>
+
+  <div id="modal" class="modal hidden"><div class="modal-box"></div></div>
+  <input type="file" id="fileInput" accept=".json,.jsonl,.txt" hidden>
+  <div id="toast" class="toast"></div>
+
+  <script src="js/schema.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/jsonl.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
