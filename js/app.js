@@ -857,10 +857,16 @@
       if (!o._bind.kind) delete o._bind;
       commit();
     };
+    // Krissvia ne commande que sur l'événement « up », que seul un btn envoie (Evenements.cs) : pas de switch ni de case.
+    const cmd = el('option', { value: 'btn' }, 'Commande (interrupteur / lumière)');
+    if (o.obj !== 'btn' && b.kind !== 'btn') cmd.disabled = true;
     const kind = el('select', { onchange: () => { save('kind', kind.value); renderProps(); } },
-      el('option', { value: '' }, '(aucune)'), el('option', { value: 'aff' }, 'Affiche une valeur'), el('option', { value: 'btn' }, 'Commande (interrupteur / lumière)'));
+      el('option', { value: '' }, '(aucune)'), el('option', { value: 'aff' }, 'Affiche une valeur'), cmd);
     kind.value = b.kind || '';
     rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Rôle'), el('div', { class: 'field' }, kind)));
+    if (b.kind === 'btn' && o.obj !== 'btn') rows.appendChild(el('p', { class: 'note warn', style: { gridColumn: '1 / 3' } }, 'Seul un bouton (btn) commande : Krissvia ignore les switch et les cases.'));
+    else if (b.kind === 'btn' && !o.toggle) rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, 'Avec toggle coché, le bouton reste enfoncé tant que l\'entité est allumée.'));
+    else if (o.obj !== 'btn' && !b.kind) rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, 'Pour commander une entité, utiliser un bouton (btn) : Krissvia ignore les switch et les cases.'));
     if (b.kind) {
       const text = (key, label, ph) => {
         const i = el('input', { type: 'text', value: b[key] || '', placeholder: ph, spellcheck: 'false', onchange: () => save(key, i.value.trim()) });

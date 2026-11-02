@@ -35,7 +35,9 @@ des réglages « Affichage ») et la **barre de navigation** (nombre de pages pr
 Chaque objet peut recevoir une **liaison** (panneau Propriétés) :
 
 - **Affiche une valeur** : entité, attribut `text` ou `val`, format (`Salon {} °C`), champ (`temperature`, `target`).
-- **Commande** : un bouton qui allume ou éteint un interrupteur ou une lumière.
+- **Commande** : un bouton qui allume ou éteint un interrupteur ou une lumière. Seulement un `btn` : Krissvia ne
+  réagit qu'à l'événement `up`, qu'un `switch` ou une case n'envoient pas. Avec `toggle` coché, le bouton reste enfoncé
+  tant que l'entité est allumée (couleur de cet état : `bg_color01`).
 
 L'onglet **JSONL** donne alors deux choses : le JSONL à coller dans « Page perso » des réglages de la platine, et le
 fragment complet (`NomPagePerso`, `PagePerso`, `AffichagesPerso`, `BoutonsPerso`) pour `appsettings.Local.json`.

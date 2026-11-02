@@ -182,7 +182,9 @@ window.OHE = window.OHE || {};
         if (kv && o.text_font !== undefined && !OHE.FONTS_OK.has(Number(o.text_font))) add('warn', `police ${o.text_font} hors de la liste Krissvia (${OHE.KRISSVIA_FONTS.join(', ')})`);
         if ((o.obj === 'btn' || o.obj === 'label') && (o.text === '' || o.text === undefined)) add('info', 'texte vide');
         if (typeof o.text === 'string' && /[·•…–—]/.test(o.text)) add('warn', 'caractère typographique (· • … –) souvent absent de la police : préférer l\'ASCII');
-        if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj !== 'btn' && o.obj !== 'switch' && o.obj !== 'checkbox') add('warn', 'liaison « bouton » sur un objet qui ne se presse pas');
+        // Krissvia ne commande que sur « up », que seul un btn envoie (un switch envoie « on »/« off »).
+        if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj !== 'btn') add('error', 'liaison « Commande » sur autre chose qu\'un bouton (btn) — Krissvia l\'ignore');
+        if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj === 'btn' && !o.toggle) add('info', 'bouton de commande sans toggle : il ne montrera pas l\'état de l\'entité');
       });
     });
     return issues;
