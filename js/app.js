@@ -860,7 +860,17 @@
     // Krissvia ne commande que sur l'événement « up », que seul un btn envoie (Evenements.cs) : pas de switch ni de case.
     const cmd = el('option', { value: 'btn' }, 'Commande (interrupteur / lumière)');
     if (o.obj !== 'btn' && b.kind !== 'btn') cmd.disabled = true;
-    const kind = el('select', { onchange: () => { save('kind', kind.value); renderProps(); } },
+    // Krissvia montre l'état par val : sans toggle ni couleur d'état enfoncé, le bouton ne change pas d'aspect.
+    const kind = el('select', {
+      onchange: () => {
+        if (kind.value === 'btn' && o.obj === 'btn') {
+          o.toggle = true;
+          if (!o.bg_color01) o.bg_color01 = '#30D158';
+        }
+        save('kind', kind.value);
+        renderAll();
+      },
+    },
       el('option', { value: '' }, '(aucune)'), el('option', { value: 'aff' }, 'Affiche une valeur'), cmd);
     kind.value = b.kind || '';
     rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Rôle'), el('div', { class: 'field' }, kind)));
