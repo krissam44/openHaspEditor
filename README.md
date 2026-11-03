@@ -102,3 +102,8 @@ fonts/           police Material Design Icons 7.4.47 (copie locale, Apache 2.0)
 - `tabview`/`tab` et `msgbox` ne sont pas dans la palette (ils s'importent et s'exportent quand même, via le JSON brut).
 - Pas d'envoi direct à la platine : télécharger le JSONL, puis le téléverser (ou le coller dans les réglages Krissvia).
 - Interface en français.
+
+## Licence
+
+[Apache 2.0](LICENSE). La police Material Design Icons (`fonts/`) est de [Pictogrammers](https://pictogrammers.com),
+sous la même licence.
