@@ -94,6 +94,7 @@ window.OHE = window.OHE || {};
         { title: 'Bouton', props: [
           { key: 'text', label: 'Texte', type: 'text' },
           { key: 'toggle', label: 'Bascule', type: 'bool' },
+          { key: 'bg_color01', label: 'Fond enfoncé', type: 'color' },
           { key: 'val', label: 'Enfoncé (val)', type: 'int', min: 0, max: 1 },
         ] }, G.texte, G.fond, G.bordure, G.ombre, G.marges],
     },

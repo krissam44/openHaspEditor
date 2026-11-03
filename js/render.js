@@ -116,7 +116,11 @@ window.OHE = window.OHE || {};
   const renderers = {
     btn(el, o) {
       applyBox(el, o, { bg: '#0A84FF', radius: 10 });
-      if (o.toggle && Number(o.val) === 1) el.style.filter = 'brightness(1.35)';
+      // Bascule enfoncée : la couleur de l'état 01 (checked) si elle est donnée, sinon un fond éclairci.
+      if (o.toggle && Number(o.val) === 1) {
+        if (o.bg_color01) el.style.background = OHE.rgba(o.bg_color01, get(o, 'bg_opa', 255));
+        else el.style.filter = 'brightness(1.35)';
+      }
       const t = div('txt center', el);
       applyText(t, o, 'center');
       t.textContent = OHE.displayText(get(o, 'text', ''));
