@@ -12,12 +12,30 @@ window.OHE = window.OHE || {};
   OHE.PALETTE = ['#1C1C1E', '#2C2C2E', '#3A3A3C', '#FFFFFF', '#999999', '#888888', '#64B5F6', '#0A84FF',
     '#30D158', '#FF9F0A', '#FF5722', '#FF453A', '#BF5AF2', '#133B34'];
 
-  // Icônes vérifiées sur les platines Krissvia (Icones dans MiseEnPage.cs) : codepoint MDI F0xxx écrit Exxx.
-  OHE.SAFE_ICONS = [
-    ['thermometer', 0xE50F], ['calendar', 0xE0ED], ['fire', 0xE238], ['radiator', 0xE438], ['minus', 0xE374],
-    ['plus', 0xE415], ['leaf', 0xE32A], ['snowflake', 0xE717], ['power', 0xE425], ['water', 0xE58E],
-    ['clock-outline', 0xE150], ['shield-home', 0xE99D], ['white-balance-sunny', 0xE5A8],
+  // Les 146 icônes MDI de la police du firmware openHASP 0.7 (openhasp.com, Design > Fonts), à toutes les tailles.
+  // Codepoint MDI F0xxx écrit Exxx, F1xxx écrit Fxxx. Les autres icônes MDI ne s'affichent pas sur la platine.
+  // human-greeting (E64A) s'appelle human-greeting-variant depuis MDI 7.
+  const ICON_GROUPS = [
+    ['Éclairage', 'ceiling-light E769 coach-lamp F020 desk-lamp E95F floor-lamp E8DD lamp E6B5 lightbulb E335 lightbulb-on E6E8 outdoor-lamp F054 string-lights F2BA vanity-light F1E1 wall-sconce E91C'],
+    ['Énergie', 'power E425 power-plug E6A5 lightning-bolt F40B leaf E32A ev-station E5F1 battery-high F2A3 battery-medium F2A2 battery-low F2A1 battery-outline E08E solar-panel ED9B solar-panel-large ED9C solar-power EA72 solar-power-variant-outline FA74 transmission-tower ED3E transmission-tower-import F92D transmission-tower-export F92C'],
+    ['Climat et météo', 'thermometer E50F fire E238 radiator E438 radiator-disabled EAD7 radiator-off EAD8 snowflake E717 air-conditioner E01B water E58C water-percent E58E cloud-search-outline E957 white-balance-sunny E5A8 weather-sunny E599 weather-partly-cloudy E595 weather-cloudy E590 weather-fog E591 weather-hazy EF30 weather-hail E592 weather-lightning E593 weather-lightning-rainy E67E weather-night E594 weather-night-partly-cloudy EF31 weather-pouring E596 weather-rainy E597 weather-snowy E598 weather-snowy-rainy E67F weather-windy E59D weather-windy-variant E59E'],
+    ['Ouvrants', 'door-closed E81B door-open E81C door-closed-lock F0AF window-closed-variant F1DB window-shutter F11C window-shutter-open F11E window-shutter-alert F11D blinds E0AC blinds-open F011 garage-variant F2D3 garage-open-variant F2D4'],
+    ['Sécurité', 'shield-home E68A shield-lock E99D shield-check E565 lock E33E lock-open-variant EFC6 key-variant E30B alert E026 cctv E7AE bell E09A'],
+    ['Pièces', 'home E2DC home-outline E6A1 bed E2E3 sofa E4B9 silverware-fork-knife EA70 coffee E176 shower E9A0 toilet E9AB pool E606 car E10B'],
+    ['Appareils', 'fan E210 television E502 laptop E322 cellphone E11C fridge-outline E28F stove E4DE microwave EC99 kettle E5FA dishwasher EAAC washing-machine E72A tumble-dryer E917 robot-vacuum E70D robot-mower-outline F1F3 water-pump E58F fountain E96B engine E1FA trash-can-outline EA7A recycle-variant F39D'],
+    ['Présence', 'account E004 human-greeting-variant E64A run E70E'],
+    ['Heure', 'clock-outline E150 calendar E0ED history E2DA timer-outline E51B'],
+    ['Son', 'play E40A pause E3E4 stop E4DB skip-next E4AD skip-previous E4AE repeat E456 repeat-off E457 repeat-once E458 shuffle E49D shuffle-disabled E49E volume-high E57E volume-medium E580 volume-mute E75F speaker E4C3 monitor-speaker EF5F music E75A'],
+    ['Commandes', 'plus E415 minus E374 check E12C close E156 cog E493 dots-vertical E1D9 bluetooth E0AF wifi E5A9'],
+    ['Flèches', 'arrow-up E05D arrow-down E045 arrow-left E04D arrow-right E054 arrow-up-box E6C3 arrow-down-box E6C0 arrow-left-box E6C1 arrow-right-box E6C2 chevron-up E143 chevron-down E140 chevron-left E141 chevron-right E142 subdirectory-arrow-left E60C'],
   ];
+  OHE.ICON_GROUPS = ICON_GROUPS.map(([title, list]) => {
+    const t = list.split(' ');
+    const icons = [];
+    for (let i = 0; i < t.length; i += 2) icons.push([t[i], parseInt(t[i + 1], 16)]);
+    return { title, icons };
+  });
+  OHE.FIRMWARE_ICONS = new Set(OHE.ICON_GROUPS.flatMap(g => g.icons.map(i => i[1])));
 
   const opt = (...v) => v.map(x => (Array.isArray(x) ? { value: x[0], label: x[1] } : { value: x, label: String(x) }));
 

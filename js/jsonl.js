@@ -11,9 +11,9 @@ window.OHE = window.OHE || {};
 
   const ORDER = ['page', 'id', 'obj', 'parentid', 'x', 'y', 'w', 'h'];
 
-  // Les icônes (zone privée Exxx) sortent en \uExxx : lisibles et sûres quel que soit l'éditeur qui rouvre le fichier.
+  // Les icônes (Exxx, Fxxx) sortent en \uExxx : lisibles et sûres quel que soit l'éditeur qui rouvre le fichier.
   function stringify(obj) {
-    return JSON.stringify(obj).replace(/[-]/g, c => '\\u' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0'));
+    return JSON.stringify(obj).replace(/[\uE000-\uFAFF]/g, c => '\\u' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0'));
   }
 
   // Objet de l'éditeur -> objet du JSONL : clés « _ » retirées, clés d'identité en tête.
@@ -182,6 +182,10 @@ window.OHE = window.OHE || {};
         if (kv && o.text_font !== undefined && !OHE.FONTS_OK.has(Number(o.text_font))) add('warn', `police ${o.text_font} hors de la liste Krissvia (${OHE.KRISSVIA_FONTS.join(', ')})`);
         if ((o.obj === 'btn' || o.obj === 'label') && (o.text === '' || o.text === undefined)) add('info', 'texte vide');
         if (typeof o.text === 'string' && /[·•…–—]/.test(o.text)) add('warn', 'caractère typographique (· • … –) souvent absent de la police : préférer l\'ASCII');
+        if (typeof o.text === 'string') {
+          const absentes = [...new Set(o.text.match(OHE.ICON_RANGE) || [])].filter(c => !OHE.FIRMWARE_ICONS.has(c.charCodeAt(0)));
+          if (absentes.length) add('warn', `icône ${absentes.map(c => '\\u' + c.charCodeAt(0).toString(16).toUpperCase()).join(', ')} absente de la police du firmware — rien ne s'affichera`);
+        }
         // Krissvia ne commande que sur « up », que seul un btn envoie (un switch envoie « on »/« off »).
         if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj !== 'btn') add('error', 'liaison « Commande » sur autre chose qu\'un bouton (btn) — Krissvia l\'ignore');
         if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj === 'btn' && !o.toggle) add('info', 'bouton de commande sans toggle : il ne montrera pas l\'état de l\'entité');

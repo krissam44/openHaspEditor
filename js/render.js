@@ -24,13 +24,15 @@ window.OHE = window.OHE || {};
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
   };
 
-  // Le firmware écrit l'icône MDI F0xxx en Exxx : on la remet à son vrai codepoint pour la police web.
+  // Le firmware écrit l'icône MDI F0xxx en Exxx et F1xxx en Fxxx : on la remet à son vrai codepoint pour la police
+  // web. Rien au-delà de FAFF : ligatures, formes pleine chasse et BOM restent du texte.
+  OHE.ICON_RANGE = /[-﫿]/g;
   OHE.displayText = function (s) {
     if (s === undefined || s === null) return '';
     let out = '';
     for (const ch of String(s)) {
       const c = ch.codePointAt(0);
-      out += c >= 0xE000 && c <= 0xEFFF ? String.fromCodePoint(0xF0000 + (c - 0xE000)) : ch;
+      out += c >= 0xE000 && c <= 0xFAFF ? String.fromCodePoint(0xF0000 + (c - 0xE000)) : ch;
     }
     return out;
   };

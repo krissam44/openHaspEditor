@@ -17,7 +17,7 @@ python -m http.server 8480
 
 puis ouvrir <http://localhost:8480>.
 
-Internet sert uniquement aux polices (Roboto Condensed, Material Design Icons). Le projet est sauvegardé tout seul dans
+Internet sert uniquement à la police Roboto Condensed ; celle des icônes (Material Design Icons) est dans `fonts/`. Le projet est sauvegardé tout seul dans
 le navigateur (localStorage) à chaque modification.
 
 ## Les deux modes
@@ -49,9 +49,9 @@ fragment complet (`NomPagePerso`, `PagePerso`, `AffichagesPerso`, `BoutonsPerso`
   glisser pour la couper, `Maj` sur une poignée d'angle pour garder les proportions.
 - **Clavier** : flèches (1 px, `Maj` : un pas de grille), `Suppr`, `Ctrl+C/V/X/D`, `Ctrl+Z/Y`, `Ctrl+A`, `Ctrl+S`
   (enregistre le projet), `Ctrl+molette` (zoom), `Espace` + glisser (défiler), `0` (ajuster).
-- **Icônes** : bouton 😊 à côté d'un texte. Les icônes MDI s'écrivent `\uExxx` (codepoint F0xxx sans le « F0 »), comme
-  sur les platines. Les icônes « vérifiées » sont celles qu'affichent déjà les pages Krissvia ; pour les autres, le
-  firmware n'embarque qu'un sous-ensemble : à essayer sur la platine.
+- **Icônes** : bouton 😊 à côté d'un texte. Le sélecteur propose les 146 icônes MDI de la police du firmware openHASP
+  0.7, par thème, utilisables à toutes les tailles. Elles s'écrivent `\uExxx` (codepoint F0xxx) ou `\uFxxx` (F1xxx),
+  comme sur les platines. Une autre icône MDI ne s'afficherait pas : l'onglet Vérif la signale.
 - **Retour à la ligne** dans un texte : `\n`.
 - **Plan** : l'ordre du fichier, qui est aussi l'ordre d'empilement (le premier est dessous), et l'œil pour `hidden`.
 - **JSON brut** (en bas des propriétés) : toutes les propriétés de l'objet, y compris celles que l'éditeur ne propose
@@ -71,6 +71,7 @@ js/schema.js     objets openHASP, propriétés, valeurs à la création
 js/render.js     aperçu HTML/SVG des objets (approximation de LVGL)
 js/jsonl.js      export, import, vérifications, réglages Krissvia
 js/app.js        état, toile, sélection, panneaux, historique
+fonts/           police Material Design Icons 7.4.47 (copie locale)
 ```
 
 ## Limites connues

@@ -235,9 +235,13 @@ h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing
   max-height: 88vh; display: flex; flex-direction: column; gap: 10px;
 }
 .modal-box h2 { margin: 0; font-size: 16px; }
-.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 4px; overflow-y: auto; min-height: 200px; }
+.icon-list { overflow-y: auto; min-height: 200px; }
+.icon-list h3 { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.icon-list h3:first-child { margin-top: 0; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 4px; }
 .icon-grid button { flex-direction: column; font-size: 9.5px; padding: 4px 2px; min-height: 58px; color: var(--muted); overflow: hidden; }
-.icon-grid button .mdi { font-size: 24px; color: var(--text); }
+/* Le glyphe est le caractère lui-même (pas de classe mdi-xxx) : la police doit être donnée ici, pas par .mdi::before. */
+.icon-grid button .mdi { font-family: "Material Design Icons"; font-size: 24px; line-height: 1; color: var(--text); }
 .icon-grid button span.n { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toast {
   position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%); background: #000d; color: #fff; padding: 8px 14px;

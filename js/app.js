@@ -636,7 +636,7 @@
   // ── Panneau des propriétés ────────────────────────────────────────────────
 
   // Texte affiché dans un champ : icônes en \uExxx, retours à la ligne en \n.
-  const toField = s => String(s ?? '').replace(/[\uE000-\uF8FF]/g, c => '\\u' + c.charCodeAt(0).toString(16).toUpperCase()).replace(/\n/g, '\\n');
+  const toField = s => String(s ?? '').replace(/[\uE000-\uFAFF]/g, c => '\\u' + c.charCodeAt(0).toString(16).toUpperCase()).replace(/\n/g, '\\n');
   const fromField = s => s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/\\n/g, '\n');
 
   function setProp(targets, key, value) {
@@ -1200,42 +1200,28 @@
     t.focus();
   }
 
-  // Icônes MDI : la feuille de style de @mdi/font donne nom et codepoint ; seules les F0xxx passent sur la platine.
-  let mdiIcons = null;
-  async function loadMdi() {
-    if (mdiIcons) return mdiIcons;
-    const res = await fetch('https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.css');
-    const css = await res.text();
-    mdiIcons = [];
-    const re = /\.mdi-([a-z0-9-]+)::?before\s*\{\s*content:\s*"\\(F0[0-9A-F]{3})"/gi;
-    let m;
-    while ((m = re.exec(css))) mdiIcons.push([m[1], 0xE000 + (parseInt(m[2], 16) - 0xF0000)]);
-    return mdiIcons;
-  }
-
+  // Icônes : seulement celles de la police du firmware (OHE.ICON_GROUPS), les autres ne s'afficheraient pas.
   function iconPicker(onPick) {
     const search = el('input', { type: 'search', placeholder: 'Rechercher (anglais : lightbulb, fan, door…)' });
-    const grid = el('div', { class: 'icon-grid' });
-    const info = el('p', { class: 'note' }, 'Icônes vérifiées sur les platines Krissvia. Les autres viennent de MDI : le firmware n\'en embarque qu\'un sous-ensemble, à vérifier sur la platine.');
+    const list = el('div', { class: 'icon-list' });
+    const info = el('p', { class: 'note' }, 'Les 146 icônes de la police du firmware openHASP, utilisables à toutes les tailles. Les autres icônes MDI ne s\'affichent pas sur la platine.');
     let close;
-    const show = list => {
-      grid.innerHTML = '';
-      list.slice(0, 400).forEach(([name, code]) => grid.appendChild(el('button', { title: `${name} · \\u${code.toString(16).toUpperCase()}`, onclick: () => { close(); onPick(code); } },
-        el('span', { class: 'mdi' }, OHE.displayText(String.fromCharCode(code))), el('span', { class: 'n' }, name))));
-      if (!list.length) grid.appendChild(el('p', { class: 'muted' }, 'Aucune icône.'));
-    };
-    const filter = async () => {
+    const button = ([name, code]) => el('button', { title: `${name} · \\u${code.toString(16).toUpperCase()}`, onclick: () => { close(); onPick(code); } },
+      el('span', { class: 'mdi' }, OHE.displayText(String.fromCharCode(code))), el('span', { class: 'n' }, name));
+    const show = () => {
       const q = search.value.trim().toLowerCase();
-      if (!q) { show(OHE.SAFE_ICONS); return; }
-      try {
-        const all = await loadMdi();
-        show(OHE.SAFE_ICONS.concat(all).filter(([n]) => n.includes(q)).filter((x, i, a) => a.findIndex(y => y[1] === x[1]) === i));
-      } catch { grid.innerHTML = ''; grid.appendChild(el('p', { class: 'muted' }, 'Liste MDI indisponible (hors ligne ?) : seules les icônes vérifiées sont proposées.')); }
+      list.innerHTML = '';
+      OHE.ICON_GROUPS.forEach(g => {
+        const icons = g.icons.filter(([n]) => n.includes(q));
+        if (!icons.length) return;
+        list.appendChild(el('h3', {}, g.title));
+        list.appendChild(el('div', { class: 'icon-grid' }, ...icons.map(button)));
+      });
+      if (!list.children.length) list.appendChild(el('p', { class: 'muted' }, 'Aucune icône.'));
     };
-    let tm;
-    search.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(filter, 150); });
-    close = modal([el('h2', {}, 'Insérer une icône'), search, info, grid, el('div', { class: 'btnrow' }, el('span', { class: 'spacer' }), el('button', { onclick: () => close() }, 'Fermer'))]);
-    show(OHE.SAFE_ICONS);
+    search.addEventListener('input', show);
+    close = modal([el('h2', {}, 'Insérer une icône'), search, info, list, el('div', { class: 'btnrow' }, el('span', { class: 'spacer' }), el('button', { onclick: () => close() }, 'Fermer'))]);
+    show();
     search.focus();
   }
 
