@@ -54,6 +54,17 @@ window.OHE = window.OHE || {};
     return result;
   };
 
+  // Le thème openHASP donne aux boutons et panneaux un dégradé vertical vers le bleu, que bg_color seul ne retire pas.
+  // Sans dégradé choisi, le fond est donc écrit uni, comme dans l'aperçu : bg_grad_color égal à bg_color et
+  // bg_grad_dir à 0 (MiseEnPage.Fond de Krissvia fait de même), et pareil pour l'état enfoncé (01).
+  const THEME_GRADIENT = new Set(['btn', 'obj']);
+  function plainBackground(out, o) {
+    if (!THEME_GRADIENT.has(o.obj) || Number(out.bg_grad_dir) > 0) return out;
+    if (out.bg_color !== undefined) { out.bg_grad_color = out.bg_color; out.bg_grad_dir = 0; }
+    if (out.bg_color01 !== undefined && !(Number(out.bg_grad_dir01) > 0)) out.bg_grad_color01 = out.bg_color01;
+    return out;
+  }
+
   OHE.exportJsonl = function (project) {
     const lines = [];
     if (project.mode === 'krissvia') {
@@ -61,7 +72,7 @@ window.OHE = window.OHE || {};
       const page = project.pages[0];
       OHE.orderedObjects(page.objects).forEach(o => {
         if (o._comment) String(o._comment).split('\n').forEach(c => lines.push('// ' + c));
-        lines.push(stringify(OHE.exportObject(o, null)));
+        lines.push(stringify(plainBackground(OHE.exportObject(o, null), o)));
       });
       return lines.join('\n') + '\n';
     }
@@ -72,7 +83,7 @@ window.OHE = window.OHE || {};
       if (Object.keys(props).length) lines.push(stringify(Object.assign({ page: page.page, id: 0 }, props)));
       OHE.orderedObjects(page.objects).forEach(o => {
         if (o._comment) String(o._comment).split('\n').forEach(c => lines.push(stringify({ page: page.page, comment: c })));
-        lines.push(stringify(OHE.exportObject(o, page.page)));
+        lines.push(stringify(plainBackground(OHE.exportObject(o, page.page), o)));
       });
     });
     return lines.join('\n') + '\n';
@@ -181,6 +192,7 @@ window.OHE = window.OHE || {};
         }
         if (kv && o.text_font !== undefined && !OHE.FONTS_OK.has(Number(o.text_font))) add('warn', `police ${o.text_font} hors de la liste Krissvia (${OHE.KRISSVIA_FONTS.join(', ')})`);
         if ((o.obj === 'btn' || o.obj === 'label') && (o.text === '' || o.text === undefined)) add('info', 'texte vide');
+        if ((o.obj === 'arc' || o.obj === 'spinner') && Number(o.w) !== Number(o.h)) add('info', `pas carré : l'arc est dessiné dans le carré en haut à gauche (${Math.min(o.w, o.h)} × ${Math.min(o.w, o.h)}), ce qui reste ne sert à rien`);
         if (typeof o.text === 'string' && /[·•…–—]/.test(o.text)) add('warn', 'caractère typographique (· • … –) souvent absent de la police : préférer l\'ASCII');
         if (typeof o.text === 'string') {
           const absentes = [...new Set(o.text.match(OHE.ICON_RANGE) || [])].filter(c => !OHE.FIRMWARE_ICONS.has(c.charCodeAt(0)));

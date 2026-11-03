@@ -115,6 +115,10 @@ window.OHE = window.OHE || {};
     return max === min ? 0 : Math.max(0, Math.min(1, (num(o, 'val', 0) - min) / (max - min)));
   };
 
+  // LVGL 7 (openHASP 0.7) dessine l'arc dans le carré en HAUT À GAUCHE de l'objet, pas au centre : centre en
+  // (r, r), r = min(w, h) / 2. Un arc plus large que haut laisse donc sa marge à droite (vu sur platine, 03/11/2026).
+  const arcCenter = o => Math.min(o.w, o.h) / 2;
+
   const renderers = {
     btn(el, o) {
       applyBox(el, o, { bg: '#0A84FF', radius: 10 });
@@ -172,10 +176,11 @@ window.OHE = window.OHE || {};
       applyBox(el, o, { bgOpa: 0 });
       const lw = num(o, 'line_width', 8), lw10 = num(o, 'line_width10', lw);
       const s = svg(o.w, o.h, el);
-      const r = Math.min(o.w, o.h) / 2 - Math.max(lw, lw10) / 2;
-      sv('circle', { cx: o.w / 2, cy: o.h / 2, r, fill: 'none', stroke: get(o, 'line_color'), 'stroke-width': lw }, s);
-      const p = sv('path', { d: arcPath(o.w / 2, o.h / 2, r, 0, num(o, 'angle', 60)), fill: 'none', stroke: get(o, 'line_color10'), 'stroke-width': lw10, 'stroke-linecap': 'round' }, s);
-      p.style.transformOrigin = `${o.w / 2}px ${o.h / 2}px`;
+      const c = arcCenter(o);
+      const r = c - Math.max(lw, lw10) / 2;
+      sv('circle', { cx: c, cy: c, r, fill: 'none', stroke: get(o, 'line_color'), 'stroke-width': lw }, s);
+      const p = sv('path', { d: arcPath(c, c, r, 0, num(o, 'angle', 60)), fill: 'none', stroke: get(o, 'line_color10'), 'stroke-width': lw10, 'stroke-linecap': 'round' }, s);
+      p.style.transformOrigin = `${c}px ${c}px`;
       p.style.animation = `ohe-spin ${num(o, 'speed', 1000)}ms linear infinite`;
     },
     arc(el, o) {
@@ -186,13 +191,14 @@ window.OHE = window.OHE || {};
       let span = ((num(o, 'end_angle', 45) - num(o, 'start_angle', 135)) % 360 + 360) % 360;
       if (span === 0) span = 360;
       const s = svg(o.w, o.h, el);
-      const r = Math.min(o.w, o.h) / 2 - Math.max(lw, lw10) / 2;
+      const c = arcCenter(o);
+      const r = c - Math.max(lw, lw10) / 2;
       const cap = get(o, 'line_rounded', true) === false ? 'butt' : 'round';
-      sv('path', { d: arcPath(o.w / 2, o.h / 2, r, start, span), fill: 'none', stroke: get(o, 'line_color'), 'stroke-width': lw, 'stroke-linecap': cap, 'stroke-opacity': num(o, 'line_opa', 255) / 255 }, s);
+      sv('path', { d: arcPath(c, c, r, start, span), fill: 'none', stroke: get(o, 'line_color'), 'stroke-width': lw, 'stroke-linecap': cap, 'stroke-opacity': num(o, 'line_opa', 255) / 255 }, s);
       const vs = span * ratio(o);
-      if (vs > 0.5) sv('path', { d: arcPath(o.w / 2, o.h / 2, r, start, vs), fill: 'none', stroke: get(o, 'line_color10'), 'stroke-width': lw10, 'stroke-linecap': cap }, s);
+      if (vs > 0.5) sv('path', { d: arcPath(c, c, r, start, vs), fill: 'none', stroke: get(o, 'line_color10'), 'stroke-width': lw10, 'stroke-linecap': cap }, s);
       if (o.adjustable) {
-        const [kx, ky] = polar(o.w / 2, o.h / 2, r, start + vs);
+        const [kx, ky] = polar(c, c, r, start + vs);
         sv('circle', { cx: kx, cy: ky, r: lw10 / 2 + 3, fill: get(o, 'bg_color20') }, s);
       }
     },

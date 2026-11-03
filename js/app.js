@@ -77,6 +77,14 @@
     return { x: pp.x + (Number(o.x) || 0), y: pp.y + (Number(o.y) || 0) };
   }
   const absBox = o => { const p = absPos(o); return { x: p.x, y: p.y, w: Number(o.w) || 1, h: Number(o.h) || 1 }; };
+  // Ce qu'on voit : un arc (ou spinner) n'occupe que le carré en haut à gauche de son objet (LVGL 7, render.js).
+  // Aligner, répartir et aimanter se font sur ce carré, sinon le cercle part de travers.
+  const visBox = o => {
+    const b = absBox(o);
+    if (o.obj !== 'arc' && o.obj !== 'spinner') return b;
+    const c = Math.min(b.w, b.h);
+    return { x: b.x, y: b.y, w: c, h: c };
+  };
 
   function descendants(o) {
     const out = [];
@@ -300,7 +308,7 @@
     if (isKv() && S.project.krissvia.showNav) ys.push(OHE.KRISSVIA_NAV_TOP - 5);
     objects().forEach(o => {
       if (exclude.includes(o)) return;
-      const b = absBox(o);
+      const b = visBox(o);
       xs.push(b.x, b.x + b.w / 2, b.x + b.w);
       ys.push(b.y, b.y + b.h / 2, b.y + b.h);
     });
@@ -350,7 +358,7 @@
       }
       if (!S.sel.includes(uid)) { S.sel = [uid]; renderAll({ keepCanvas: true }); }
       const roots = selectionRoots();
-      drag = { kind: 'move', start: p, items: roots.map(o => ({ o, x: Number(o.x), y: Number(o.y), abs: absBox(o) })), moved: false };
+      drag = { kind: 'move', start: p, items: roots.map(o => ({ o, x: Number(o.x), y: Number(o.y), abs: visBox(o) })), moved: false };
       ev.preventDefault();
       return;
     }
@@ -576,14 +584,14 @@
     let ref;
     if (roots.length === 1) {
       const p = parentOf(roots[0]);
-      ref = p ? absBox(p) : { x: 0, y: 0, w: S.project.width, h: isKv() && S.project.krissvia.showNav ? OHE.KRISSVIA_NAV_TOP - 5 : S.project.height };
+      ref = p ? visBox(p) : { x: 0, y: 0, w: S.project.width, h: isKv() && S.project.krissvia.showNav ? OHE.KRISSVIA_NAV_TOP - 5 : S.project.height };
     } else {
-      const bs = roots.map(absBox);
+      const bs = roots.map(visBox);
       const x = Math.min(...bs.map(b => b.x)), y = Math.min(...bs.map(b => b.y));
       ref = { x, y, w: Math.max(...bs.map(b => b.x + b.w)) - x, h: Math.max(...bs.map(b => b.y + b.h)) - y };
     }
     roots.forEach(o => {
-      const b = absBox(o);
+      const b = visBox(o);
       let nx = b.x, ny = b.y;
       if (kind === 'left') nx = ref.x;
       if (kind === 'hcenter') nx = Math.round(ref.x + (ref.w - b.w) / 2);
@@ -602,7 +610,7 @@
     const roots = selectionRoots();
     if (roots.length < 3) { toast('Sélectionner au moins 3 objets'); return; }
     const k = horiz ? 'x' : 'y', s = horiz ? 'w' : 'h';
-    const items = roots.map(o => ({ o, b: absBox(o) })).sort((a, b) => a.b[k] - b.b[k]);
+    const items = roots.map(o => ({ o, b: visBox(o) })).sort((a, b) => a.b[k] - b.b[k]);
     const first = items[0].b, last = items[items.length - 1].b;
     const total = items.reduce((t, i) => t + i.b[s], 0);
     const gap = (last[k] + last[s] - first[k] - total) / (items.length - 1);
@@ -1357,7 +1365,7 @@
     const objs = [
       { id: 1, obj: 'label', x: 20, y: 16, w: 440, h: 40, text: '\uE50F Salon', text_font: 32, text_color: '#64B5F6', align: 'center', bg_opa: 0, border_width: 0 },
       { id: 2, obj: 'obj', x: 20, y: 70, w: 210, h: 170, bg_color: '#2C2C2E', radius: 18, border_width: 0, click: false },
-      { id: 3, obj: 'arc', x: 35, y: 80, w: 180, h: 150, min: 0, max: 35, val: 21, start_angle: 135, end_angle: 45, line_width: 14, line_color: '#3A3A3C', line_width10: 14, line_color10: '#FF9F0A', bg_opa: 0, border_width: 0, _bind: { kind: 'aff', entite: 'sensor.salon_temperature', attribut: 'val' } },
+      { id: 3, obj: 'arc', x: 50, y: 80, w: 150, h: 150, min: 0, max: 35, val: 21, start_angle: 135, end_angle: 45, line_width: 14, line_color: '#3A3A3C', line_width10: 14, line_color10: '#FF9F0A', bg_opa: 0, border_width: 0, _bind: { kind: 'aff', entite: 'sensor.salon_temperature', attribut: 'val' } },
       { id: 4, obj: 'label', x: 55, y: 135, w: 140, h: 48, text: '21,5 °C', text_font: 32, text_color: '#FFFFFF', align: 'center', bg_opa: 0, border_width: 0, _bind: { kind: 'aff', entite: 'sensor.salon_temperature', format: '°C' } },
       { id: 5, obj: 'btn', x: 250, y: 70, w: 210, h: 80, text: '\uE425 Lampe', text_font: 24, text_color: '#FFFFFF', bg_color: '#3A3A3C', radius: 14, border_width: 0, toggle: true, _bind: { kind: 'btn', entite: 'light.salon' } },
       { id: 6, obj: 'btn', x: 250, y: 160, w: 210, h: 80, text: '\uE238 Radiateur', text_font: 24, text_color: '#FFFFFF', bg_color: '#3A3A3C', radius: 14, border_width: 0, toggle: true },
