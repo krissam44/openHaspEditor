@@ -692,8 +692,10 @@
         const read = () => (i.value === '' ? undefined : Math.round(Number(i.value)));
         i.addEventListener('input', () => apply(read(), false));
         i.addEventListener('change', () => apply(read(), true));
-        const s = el('select', { title: 'Tailles Krissvia', onchange: () => { if (s.value) { i.value = s.value; apply(Number(s.value), true); renderProps(); } } },
-          el('option', { value: '' }, '▾'), ...OHE.KRISSVIA_FONTS.map(f => el('option', { value: f }, String(f))));
+        // openHASP : les tailles bitmap du firmware ; les autres passent par la police TrueType (0.7, PSRAM conseillée).
+        const sizes = isKv() ? OHE.KRISSVIA_FONTS : OHE.OPENHASP_FONTS;
+        const s = el('select', { title: isKv() ? 'Tailles Krissvia' : 'Tailles intégrées au firmware', onchange: () => { if (s.value) { i.value = s.value; apply(Number(s.value), true); renderProps(); } } },
+          el('option', { value: '' }, '▾'), ...sizes.map(f => el('option', { value: f }, String(f))));
         s.style.flex = 'none'; s.style.width = '44px';
         wrap.append(i, s);
         break;
@@ -964,12 +966,41 @@
       const c = el('input', { type: 'text', value: p.comment || '', placeholder: 'Commentaire de la page', onchange: () => { p.comment = c.value; commit(); } });
       panel.appendChild(el('div', { class: 'group' }, el('div', { class: 'rows', style: { paddingTop: '8px' } }, el('div', { class: 'row' }, el('label', {}, 'Commentaire'), el('div', { class: 'field' }, c)))));
     }
-    const size = el('div', { class: 'group' }, el('div', { class: 'rows', style: { paddingTop: '8px' } },
-      el('div', { class: 'row' }, el('label', {}, 'Écran'), el('div', { class: 'field' },
-        numInput(S.project.width, v => { S.project.width = v; commit(); zoomFit(); }), el('span', {}, '×'),
-        numInput(S.project.height, v => { S.project.height = v; commit(); zoomFit(); })))));
-    panel.appendChild(size);
-    panel.appendChild(el('p', { class: 'note' }, 'Guition ESP32-S3 4848S040 : 480 × 480. Rien de sélectionné : propriétés de la page.'));
+    panel.appendChild(screenGroup());
+    panel.appendChild(el('p', { class: 'note' }, 'Rien de sélectionné : propriétés de la page.'));
+  }
+
+  // Taille de l'écran : libre en openHASP (un modèle courant ou w × h), 480 × 480 en Krissvia (MiseEnPage.Cote).
+  const SCREENS = [
+    [320, 240, 'ESP32-2432S028 (CYD), Lanbon L8'], [480, 320, 'WT32-SC01, ESP32-3248S035'], [480, 272, 'ESP32-4827S043'],
+    [480, 480, 'Guition ESP32-S3 4848S040'], [800, 480, 'ESP32-8048S0xx, CrowPanel 5"'], [1024, 600, 'CrowPanel 7"'],
+  ];
+  function setScreen(w, h) {
+    S.project.width = w;
+    S.project.height = h;
+    commit();
+    renderAll();
+    zoomFit();
+  }
+  function screenGroup() {
+    const rows = el('div', { class: 'rows', style: { paddingTop: '8px' } });
+    if (isKv()) {
+      rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Écran'), el('div', { class: 'field' }, el('span', {}, `${S.project.width} × ${S.project.height}`))));
+      rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, 'Les pages de Krissvia sont dessinées pour 480 × 480.'));
+      return el('div', { class: 'group' }, rows);
+    }
+    const W = S.project.width, H = S.project.height;
+    const preset = el('select', { onchange: () => { if (preset.value) { const [w, h] = preset.value.split('x').map(Number); setScreen(w, h); } } },
+      el('option', { value: '' }, 'Autre taille'),
+      ...SCREENS.flatMap(([w, h, name]) => [[w, h, name], [h, w, name + ', portrait']].filter(([a, b], i) => i === 0 || a !== b))
+        .map(([w, h, name]) => el('option', { value: `${w}x${h}` }, `${w} × ${h} — ${name}`)));
+    preset.value = [...preset.options].some(o => o.value === `${W}x${H}`) ? `${W}x${H}` : '';
+    rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Modèle'), el('div', { class: 'field' }, preset)));
+    rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Écran'), el('div', { class: 'field' },
+      numInput(W, v => setScreen(v, S.project.height)), el('span', {}, '×'),
+      numInput(H, v => setScreen(S.project.width, v)),
+      el('button', { class: 'mini', title: 'Pivoter (portrait / paysage)', onclick: () => setScreen(S.project.height, S.project.width) }, icon('phone-rotate-landscape')))));
+    return el('div', { class: 'group' }, rows);
   }
 
   function numInput(v, onChange) {
@@ -1239,9 +1270,11 @@
     close = modal([
       el('h2', {}, 'Nouveau projet'),
       el('p', { class: 'note' }, 'Le projet en cours est remplacé (Ctrl+Z ne le ramènera pas : l\'enregistrer d\'abord si besoin).'),
+      el('p', { class: 'note' }, el('b', {}, 'pages.jsonl openHASP'), ' : les pages d\'une platine openHASP, quelle que soit la domotique ; la taille d\'écran se règle ensuite dans les propriétés de la page. ',
+        el('b', {}, 'Page perso Krissvia'), ' : la page 5 d\'une platine 480 × 480 pilotée par Krissvia.'),
       el('div', { class: 'btnrow' },
-        el('button', { class: 'primary', onclick: () => start('krissvia') }, icon('home-automation'), 'Page perso Krissvia'),
-        el('button', { onclick: () => start('openhasp') }, icon('file-multiple-outline'), 'pages.jsonl openHASP'),
+        el('button', { class: 'primary', onclick: () => start('openhasp') }, icon('file-multiple-outline'), 'pages.jsonl openHASP'),
+        el('button', { onclick: () => start('krissvia') }, icon('home-automation'), 'Page perso Krissvia'),
         el('span', { class: 'spacer' }),
         el('button', { onclick: () => close() }, 'Annuler')),
     ]);
@@ -1254,6 +1287,7 @@
       if (others && !confirm(`Le mode Krissvia ne garde qu'une page : seule la page ${page().page} sera conservée. Continuer ?`)) { $('#modeSelect').value = S.project.mode; return; }
       S.project.pages = [Object.assign(page(), { page: OHE.KRISSVIA_PAGE })];
       S.pageIndex = 0;
+      S.project.width = S.project.height = 480;
     }
     S.project.mode = mode;
     commit();
@@ -1356,7 +1390,7 @@
       b.addEventListener('dragstart', ev => { ev.dataTransfer.setData('application/x-ohe-type', type); ev.dataTransfer.effectAllowed = 'copy'; });
       pal.appendChild(b);
     });
-    document.body.appendChild(el('datalist', { id: 'fonts-list' }, ...OHE.KRISSVIA_FONTS.map(f => el('option', { value: f }))));
+    document.body.appendChild(el('datalist', { id: 'fonts-list' }, ...[...new Set([...OHE.OPENHASP_FONTS, ...OHE.KRISSVIA_FONTS])].sort((a, b) => a - b).map(f => el('option', { value: f }))));
   }
 
   function demoProject() {

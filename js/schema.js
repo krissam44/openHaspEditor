@@ -7,6 +7,8 @@ window.OHE = window.OHE || {};
 
   // Les tailles de police des platines Krissvia (MiseEnPage.Polices) : une taille de plus, un cache de glyphes de plus.
   OHE.KRISSVIA_FONTS = [16, 20, 24, 28, 32, 48, 84];
+  // openHASP 0.7 : Roboto Condensed en bitmap à ces tailles ; toute autre taille passe par sa police TrueType.
+  OHE.OPENHASP_FONTS = [12, 16, 24, 32];
 
   // Palette des pages générées par Krissvia, pour que la page perso s'accorde avec les autres.
   OHE.PALETTE = ['#1C1C1E', '#2C2C2E', '#3A3A3C', '#FFFFFF', '#999999', '#888888', '#64B5F6', '#0A84FF',
