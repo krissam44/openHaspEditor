@@ -89,6 +89,18 @@ window.OHE = window.OHE || {};
     return lines.join('\n') + '\n';
   };
 
+  // Krissvia (PagePerso.cs) : un choix Si oui / Si non demande les deux ; image et couleurs n'existent qu'avec lui.
+  OHE.ATTRIBUTS_DE_CHOIX = new Set(['src', 'text_color', 'bg_color']);
+  OHE.aChoix = b => !!(b && b.siOui && b.siNon);
+
+  // La valeur que Krissvia écrirait pour un état (true, false, null = inconnu), ou undefined sans choix complet.
+  OHE.valeurDeChoix = function (b, etat) {
+    if (!OHE.aChoix(b)) return undefined;
+    if (etat === true) return b.siOui;
+    if (etat === false) return b.siNon;
+    return b.siInconnu || ((b.attribut || 'text') === 'text' ? '--' : b.siNon);
+  };
+
   // Ce qu'il faut recopier dans les réglages de la platine Krissvia (Reglages.cs, classe Platine).
   OHE.exportKrissviaSettings = function (project) {
     const objects = project.pages[0].objects;
@@ -99,9 +111,15 @@ window.OHE = window.OHE || {};
       if (b.kind === 'btn') boutons.push({ Objet: Number(o.id), Entite: b.entite });
       else {
         const a = { Objet: Number(o.id), Entite: b.entite };
-        if (b.attribut === 'val') a.Attribut = 'val';
-        if (b.format) a.Format = b.format;
-        if (b.champ) a.Champ = b.champ;
+        const choix = OHE.aChoix(b);
+        if (b.attribut === 'val' || (choix && OHE.ATTRIBUTS_DE_CHOIX.has(b.attribut))) a.Attribut = b.attribut;
+        if (b.format && !OHE.ATTRIBUTS_DE_CHOIX.has(b.attribut)) a.Format = b.format;
+        if (b.champ && !OHE.ATTRIBUTS_DE_CHOIX.has(b.attribut)) a.Champ = b.champ;
+        if (choix) {
+          a.SiOui = b.siOui;
+          a.SiNon = b.siNon;
+          if (b.siInconnu) a.SiInconnu = b.siInconnu;
+        }
         affichages.push(a);
       }
     });
@@ -201,6 +219,15 @@ window.OHE = window.OHE || {};
         // Krissvia ne commande que sur « up », que seul un btn envoie (un switch envoie « on »/« off »).
         if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj !== 'btn') add('error', 'liaison « Commande » sur autre chose qu\'un bouton (btn) — Krissvia l\'ignore');
         if (kv && o._bind && o._bind.entite && o._bind.kind === 'btn' && o.obj === 'btn' && !o.toggle) add('info', 'bouton de commande sans toggle : il ne montrera pas l\'état de l\'entité');
+        const b = o._bind;
+        if (kv && b && b.kind === 'aff' && b.entite) {
+          if (OHE.ATTRIBUTS_DE_CHOIX.has(b.attribut) && !OHE.aChoix(b)) add('warn', `liaison « ${b.attribut} » sans Si oui et Si non — Krissvia écrira le texte à la place`);
+          if (b.attribut === 'src' && o.obj !== 'img') add('warn', 'liaison « src » sur autre chose qu\'une image');
+          if (o.obj === 'img' && b.attribut !== 'src') add('warn', 'une image ne montre une valeur que par « src » (une image par état)');
+          if (b.attribut === 'src') [b.siOui, b.siNon, b.siInconnu].filter(Boolean).forEach(s => {
+            if (!/^L:\//.test(s)) add('warn', `« ${s} » : une image de la platine s'écrit L:/nom.png`);
+          });
+        }
       });
     });
     return issues;

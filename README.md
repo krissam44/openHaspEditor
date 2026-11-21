@@ -51,9 +51,17 @@ La toile montre ce que le plugin ajoute de lui-même, sans l'exporter : le **fon
 Chaque objet peut recevoir une **liaison** (panneau Propriétés) :
 
 - **Affiche une valeur** : entité, attribut `text` ou `val`, format (`Salon {} °C`), champ (`temperature`, `target`).
+  **Si oui / Si non / Si inconnu** (Krissvia 1.3) : une valeur selon l'état d'une entité vraie ou fausse, qui peut aussi
+  être l'image d'un `img` (`src`, par exemple `L:/porte_ouverte.png` / `L:/porte_fermee.png`) ou une couleur
+  (`text_color`, `bg_color`).
 - **Commande** : un bouton qui allume ou éteint un interrupteur ou une lumière. Seulement un `btn` : Krissvia ne
   réagit qu'à l'événement `up`, qu'un `switch` ou une case n'envoient pas. Choisir ce rôle coche `toggle` et donne une
   couleur `bg_color01` (vert) si le bouton n'en a pas : il reste enfoncé, de cette couleur, tant que l'entité est allumée.
+
+Le menu **Aperçu** de la barre du haut montre la page comme la platine l'affichera, entité fermée / éteinte, ouverte /
+allumée ou inconnue. Pour voir les images, il faut les donner à l'éditeur : déposer les PNG sur la fenêtre, ou
+« Ajouter… » dans les propriétés d'une image. Elles restent dans le projet, rangées par nom de fichier, et ne servent
+qu'à l'aperçu : sur la platine, elles se téléversent à part (*File Editor*).
 
 L'onglet **JSONL** donne alors deux choses : le JSONL à coller dans « Page perso » des réglages de la platine, et le
 fragment complet (`NomPagePerso`, `PagePerso`, `AffichagesPerso`, `BoutonsPerso`) pour `appsettings.Local.json`.

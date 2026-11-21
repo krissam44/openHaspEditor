@@ -28,6 +28,7 @@
     grid: { show: true, snap: true, size: 5 },
     clipboard: null,
     history: [], hIndex: -1,
+    preview: '',   // '' : le JSONL tel quel ; 'oui', 'non', 'inconnu' : ce que Krissvia écrirait dans cet état
     savedSnapshot: null,
     tab: 'props',
   };
@@ -53,6 +54,8 @@
       p.objects.forEach(o => { if (!o._uid) o._uid = newUid(); });
     });
     project.krissvia = Object.assign({ bgColor: '#1C1C1E', navCount: 5, navName: 'Perso', showNav: true }, project.krissvia || {});
+    // Les PNG de la platine, par nom de fichier, pour l'aperçu : « L:/porte_fermee.png » montre images['porte_fermee.png'].
+    project.images = project.images || {};
     return project;
   }
 
@@ -110,7 +113,8 @@
 
   // ── Historique ────────────────────────────────────────────────────────────
 
-  const snapshot = () => JSON.stringify({ project: S.project, pageIndex: S.pageIndex });
+  // Sans la bibliothèque d'images : des centaines de Ko par instantané, et Ctrl+Z n'a pas à retirer une image ajoutée.
+  const snapshot = () => JSON.stringify({ project: Object.assign({}, S.project, { images: undefined }), pageIndex: S.pageIndex });
 
   function commit() {
     const snap = snapshot();
@@ -125,6 +129,7 @@
 
   function restore(snap) {
     const s = JSON.parse(snap);
+    s.project.images = S.project.images;
     S.project = ensureUids(s.project);
     S.pageIndex = Math.min(s.pageIndex, S.project.pages.length - 1);
     S.sel = S.sel.filter(u => byUid(u));
@@ -194,10 +199,22 @@
     $('#statusScreen').textContent = `${W}×${H} · ${isKv() ? 'Krissvia page ' + OHE.KRISSVIA_PAGE : 'page ' + page().page}`;
   }
 
+  // Aperçu d'un état (menu « Aperçu ») : chaque objet relié prend ce que Krissvia lui écrirait dans cet état.
+  const PREVIEW_STATES = { oui: true, non: false, inconnu: null };
+  function previewed(o) {
+    const b = o._bind;
+    if (!isKv() || !S.preview || !b || !b.entite) return o;
+    const etat = PREVIEW_STATES[S.preview];
+    if (b.kind === 'btn') return Object.assign({}, o, { val: etat ? 1 : 0 });
+    const v = OHE.valeurDeChoix(b, etat);
+    return v === undefined ? o : Object.assign({}, o, { [b.attribut || 'text']: v });
+  }
+
   function buildTree(list, container, ghost) {
     const els = new Map();
     const ids = new Map(list.map(o => [Number(o.id), o]));
-    list.forEach(o => { const e = OHE.renderObject(o); if (ghost) e.classList.add('ghost'); els.set(o, e); });
+    OHE.images = S.project.images;
+    list.forEach(o => { const e = OHE.renderObject(previewed(o)); if (ghost) e.classList.add('ghost'); els.set(o, e); });
     list.forEach(o => {
       const p = o.parentid ? ids.get(Number(o.parentid)) : null;
       (p && p !== o ? els.get(p) : container).appendChild(els.get(o));
@@ -797,18 +814,18 @@
         break;
       }
       case 'image': {
-        const f = el('input', { type: 'file', accept: 'image/*', style: { display: 'none' } });
-        f.addEventListener('change', () => {
-          const file = f.files[0];
-          if (!file) return;
-          const rd = new FileReader();
-          rd.onload = () => {
-            targets.forEach(o => { o._preview = rd.result; if (!o.src || o.src === 'L:/image.png') o.src = 'L:/' + file.name; });
-            commit(); renderProps();
-          };
-          rd.readAsDataURL(file);
+        // Les PNG choisis vont dans la bibliothèque du projet (par nom) : toute image ou liaison qui les nomme les montre.
+        const f = el('input', { type: 'file', accept: 'image/png,image/*', multiple: true, style: { display: 'none' } });
+        f.addEventListener('change', async () => {
+          const files = [...f.files];
+          if (!files.length) return;
+          await addImages(files);
+          targets.forEach(o => { if (!o.src || o.src === 'L:/image.png') o.src = 'L:/' + files[0].name; });
+          commit(); renderAll();
         });
-        wrap.append(f, el('button', { onclick: () => f.click() }, icon('image-plus'), 'Choisir…'));
+        const n = Object.keys(S.project.images).length;
+        wrap.append(f, el('button', { title: 'Ajouter des PNG à la bibliothèque du projet (plusieurs à la fois)', onclick: () => f.click() }, icon('image-plus'), 'Ajouter…'),
+          el('span', { class: 'muted', style: { fontSize: '11px' } }, n ? `${n} dans le projet` : ''));
         if (isSet) wrap.appendChild(clearBtn());
         break;
       }
@@ -877,6 +894,8 @@
           o.toggle = true;
           if (!o.bg_color01) o.bg_color01 = '#30D158';
         }
+        // Une image ne montre une valeur qu'en changeant de fichier : src, avec une image par état.
+        if (kind.value === 'aff' && o.obj === 'img') o._bind = Object.assign({}, o._bind, { attribut: 'src' });
         save('kind', kind.value);
         renderAll();
       },
@@ -889,16 +908,32 @@
     else if (o.obj !== 'btn' && !b.kind) rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, 'Pour commander une entité, utiliser un bouton (btn) : Krissvia ignore les switch et les cases.'));
     if (b.kind) {
       const text = (key, label, ph) => {
-        const i = el('input', { type: 'text', value: b[key] || '', placeholder: ph, spellcheck: 'false', onchange: () => save(key, i.value.trim()) });
+        const images = b.attribut === 'src' && key.startsWith('si');
+        const i = el('input', { type: 'text', value: b[key] || '', placeholder: ph, spellcheck: 'false', list: images ? 'images-list' : null, onchange: () => { save(key, i.value.trim()); renderScreen(); } });
         rows.appendChild(el('div', { class: 'row' }, el('label', {}, label), el('div', { class: 'field' }, i)));
       };
       text('entite', 'Entité', b.kind === 'btn' ? 'switch.salon_lampe' : 'sensor.salon_temperature');
       if (b.kind === 'aff') {
-        const at = el('select', { onchange: () => save('attribut', at.value) }, el('option', { value: 'text' }, 'text (texte)'), el('option', { value: 'val' }, 'val (entier : arc, barre…)'));
+        // src, text_color et bg_color n'ont de sens qu'avec Si oui / Si non (PagePerso.Attribut de Krissvia).
+        const at = el('select', { onchange: () => { save('attribut', at.value); renderProps(); } },
+          el('option', { value: 'text' }, 'text (texte)'), el('option', { value: 'val' }, 'val (entier : arc, barre…)'),
+          el('option', { value: 'src' }, 'src (image, selon l\'état)'), el('option', { value: 'text_color' }, 'text_color (selon l\'état)'),
+          el('option', { value: 'bg_color' }, 'bg_color (selon l\'état)'));
         at.value = b.attribut || 'text';
         rows.appendChild(el('div', { class: 'row' }, el('label', {}, 'Attribut'), el('div', { class: 'field' }, at)));
-        text('format', 'Format', 'Salon {} °C');
-        text('champ', 'Champ', 'temperature, target…');
+        const choix = OHE.ATTRIBUTS_DE_CHOIX.has(at.value);
+        if (!choix) {
+          text('format', 'Format', 'Salon {} °C');
+          text('champ', 'Champ', 'temperature, target…');
+        }
+        const ph = at.value === 'src' ? ['L:/porte_ouverte.png', 'L:/porte_fermee.png', 'vide : celle de Si non']
+          : at.value === 'text' ? ['Ouverte', 'Fermée', 'vide : --'] : ['#FF453A', '#30D158', 'vide : celle de Si non'];
+        text('siOui', 'Si oui', ph[0]);
+        text('siNon', 'Si non', ph[1]);
+        text('siInconnu', 'Si inconnu', ph[2]);
+        rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, choix
+          ? 'Selon l\'état de l\'entité (ouverte, allumée…). Le menu « Aperçu » en haut montre chaque état.'
+          : 'Si oui / Si non (facultatif) : un texte selon l\'état, à la place de Oui / Non.'));
       }
     }
     rows.appendChild(el('p', { class: 'note', style: { gridColumn: '1 / 3' } }, 'Recopiée dans les réglages de la platine (onglet JSONL), pas dans le JSONL.'));
@@ -1134,6 +1169,8 @@
     renderIssues();
     $('#projectName').value = S.project.name;
     $('#modeSelect').value = S.project.mode;
+    $('#previewSelect').style.display = isKv() ? '' : 'none';
+    $('#previewSelect').value = S.preview;
     $('#dirty').textContent = JSON.stringify(S.project) !== S.savedSnapshot ? '● modifié' : '';
     document.querySelector('[data-tab=pages]').style.display = isKv() ? 'none' : '';
     if (isKv() && S.tab === 'pages') switchTab('props');
@@ -1165,7 +1202,11 @@
   }
 
   function loadProject(p) {
+    // Un JSONL importé n'a pas d'images : il garde la bibliothèque du projet précédent.
+    const images = S.project && S.project.images;
     S.project = ensureUids(p);
+    if (images && !Object.keys(S.project.images).length) S.project.images = images;
+    refreshImageList();
     S.pageIndex = 0;
     S.sel = [];
     resetHistory();
@@ -1240,6 +1281,20 @@
   }
 
   // Icônes : seulement celles de la police du firmware (OHE.ICON_GROUPS), les autres ne s'afficheraient pas.
+  // Bibliothèque d'images du projet : nom de fichier -> data URL, pour l'aperçu seulement (rien n'est exporté).
+  async function addImages(files) {
+    const read = file => new Promise((ok, ko) => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.onerror = ko; rd.readAsDataURL(file); });
+    for (const file of files) S.project.images[file.name] = await read(file);
+    refreshImageList();
+    toast(`${files.length} image${files.length > 1 ? 's' : ''} dans le projet`);
+  }
+  function refreshImageList() {
+    let dl = $('#images-list');
+    if (!dl) { dl = el('datalist', { id: 'images-list' }); document.body.appendChild(dl); }
+    dl.innerHTML = '';
+    Object.keys(S.project.images).sort().forEach(n => dl.appendChild(el('option', { value: 'L:/' + n })));
+  }
+
   function iconPicker(onPick) {
     const search = el('input', { type: 'search', placeholder: 'Rechercher (anglais : lightbulb, fan, door…)' });
     const list = el('div', { class: 'icon-list' });
@@ -1370,6 +1425,7 @@
   $('#fileInput').addEventListener('change', ev => { const f = ev.target.files[0]; if (f) openFile(f); ev.target.value = ''; });
   $('#projectName').addEventListener('change', ev => { S.project.name = ev.target.value; commit(); });
   $('#modeSelect').addEventListener('change', ev => setMode(ev.target.value));
+  $('#previewSelect').addEventListener('change', ev => { S.preview = ev.target.value; renderScreen(); });
   $('#gridShow').addEventListener('change', ev => { S.grid.show = ev.target.checked; renderScreen(); saveGrid(); });
   $('#gridSnap').addEventListener('change', ev => { S.grid.snap = ev.target.checked; saveGrid(); });
   $('#gridSize').addEventListener('change', ev => { S.grid.size = Math.max(1, Number(ev.target.value) || 5); renderScreen(); saveGrid(); });
@@ -1377,7 +1433,15 @@
 
   // Un fichier lâché n'importe où : projet ou JSONL.
   document.addEventListener('dragover', ev => { if (ev.dataTransfer.types.includes('Files')) ev.preventDefault(); });
-  document.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) { ev.preventDefault(); openFile(ev.dataTransfer.files[0]); } });
+  document.addEventListener('drop', ev => {
+    const files = [...ev.dataTransfer.files];
+    if (!files.length) return;
+    ev.preventDefault();
+    // Des images vont dans la bibliothèque du projet ; un autre fichier est un projet ou un JSONL.
+    const images = files.filter(f => f.type.startsWith('image/'));
+    if (images.length) addImages(images).then(() => { autosave(); renderAll(); });
+    else openFile(files[0]);
+  });
   window.addEventListener('beforeunload', ev => { if (JSON.stringify(S.project) !== S.savedSnapshot) { autosave(); } void ev; });
 
   // ── Démarrage ─────────────────────────────────────────────────────────────
@@ -1421,6 +1485,7 @@
     let p = null;
     try { p = JSON.parse(localStorage.getItem(STORAGE) || 'null'); } catch { p = null; }
     S.project = ensureUids(p && Array.isArray(p.pages) ? p : demoProject());
+    refreshImageList();
     resetHistory();
     if (p) S.savedSnapshot = null;
     renderAll();

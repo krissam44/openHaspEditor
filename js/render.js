@@ -315,9 +315,11 @@ window.OHE = window.OHE || {};
       if (pts.length > 1) sv('polyline', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: get(o, 'line_color', '#888888'), 'stroke-width': num(o, 'line_width', 2), 'stroke-linecap': o.line_rounded === false ? 'butt' : 'round', 'stroke-linejoin': 'round' }, s);
     },
     img(el, o) {
-      if (o._preview) {
+      // L'image de la bibliothèque du projet portant le nom du fichier, sinon l'aperçu propre à l'objet.
+      const data = (OHE.images || {})[String(o.src || '').replace(/^L:\//, '')] || o._preview;
+      if (data) {
         const im = document.createElement('img');
-        im.src = o._preview;
+        im.src = data;
         im.className = 'fill';
         im.draggable = false;
         el.appendChild(im);
