@@ -75,7 +75,8 @@ fragment complet (`NomPagePerso`, `PagePerso`, `AffichagesPerso`, `BoutonsPerso`
   (enregistre le projet), `Ctrl+molette` (zoom), `Espace` + glisser (défiler), `0` (ajuster).
 - **Icônes** : bouton 😊 à côté d'un texte. Le sélecteur propose les 146 icônes MDI de la police du firmware openHASP
   0.7, par thème, utilisables à toutes les tailles. Elles s'écrivent `\uExxx` (codepoint F0xxx) ou `\uFxxx` (F1xxx),
-  comme sur les platines. Une autre icône MDI ne s'afficherait pas : l'onglet Vérif la signale.
+  comme sur les platines. Une autre icône MDI ne s'afficherait pas : l'onglet Vérif la signale. La planche
+  [icones.html](icones.html) les montre toutes avec leur code (un clic le copie), et s'imprime.
 - **Retour à la ligne** dans un texte : `\n`.
 - **Boutons à bascule** : `toggle` coché, la couleur « Fond enfoncé » (`bg_color01`) montre l'état `val` = 1.
 - **Arcs** : openHASP 0.7 dessine l'arc dans le carré en haut à gauche de l'objet ; l'aperçu, l'alignement et
@@ -94,6 +95,7 @@ pour que l'aperçu et la platine se ressemblent.
 
 ```
 index.html       la page
+icones.html      planche des 146 icônes du firmware, avec leurs codes
 css/app.css      l'interface
 js/schema.js     objets openHASP, propriétés, icônes du firmware, valeurs à la création
 js/render.js     aperçu HTML/SVG des objets (approximation de LVGL)

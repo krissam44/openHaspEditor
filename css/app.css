@@ -196,6 +196,7 @@ h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing
 .note { color: var(--muted); font-size: 12px; margin: 6px 2px; }
 .note b { color: var(--text); }
 .note.warn { color: var(--warn); }
+.note a { color: var(--accent); }
 .btnrow { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 
 /* Plan */

@@ -1298,7 +1298,8 @@
   function iconPicker(onPick) {
     const search = el('input', { type: 'search', placeholder: 'Rechercher (anglais : lightbulb, fan, door…)' });
     const list = el('div', { class: 'icon-list' });
-    const info = el('p', { class: 'note' }, 'Les 146 icônes de la police du firmware openHASP, utilisables à toutes les tailles. Les autres icônes MDI ne s\'affichent pas sur la platine.');
+    const info = el('p', { class: 'note' }, 'Les 146 icônes de la police du firmware openHASP, utilisables à toutes les tailles. Les autres icônes MDI ne s\'affichent pas sur la platine. ',
+      el('a', { href: 'icones.html', target: '_blank', rel: 'noopener' }, 'Planche imprimable avec les codes'));
     let close;
     const button = ([name, code]) => el('button', { title: `${name} · \\u${code.toString(16).toUpperCase()}`, onclick: () => { close(); onPick(code); } },
       el('span', { class: 'mdi' }, OHE.displayText(String.fromCharCode(code))), el('span', { class: 'n' }, name));

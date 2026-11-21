@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Icônes openHASP</title>
+<link rel="stylesheet" href="fonts/materialdesignicons.css">
+<style>
+  /* Planche des 146 icônes de la police du firmware openHASP 0.7 (la liste vient de js/schema.js). */
+  :root { --bg: #0f2747; --panel: #13315a; --line: #2a5288; --text: #e6eefb; --muted: #9db3d3; --accent: #3ea6ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, "Segoe UI", sans-serif; }
+  header { max-width: 1100px; margin: 0 auto 16px; }
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  p { margin: 4px 0; color: var(--muted); }
+  code { color: var(--text); background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  input { margin-top: 12px; width: 100%; max-width: 420px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h2 { margin: 22px 0 8px; font-size: 14px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 6px; }
+  button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--panel); color: var(--muted); font: 11px/1.2 system-ui, sans-serif; cursor: pointer; min-width: 0; }
+  button:hover { border-color: var(--accent); }
+  button .g { font-family: "Material Design Icons"; font-size: 34px; line-height: 1; color: var(--text); }
+  button .n { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button .c { font-family: Consolas, monospace; color: var(--accent); font-size: 12px; }
+  .vide { color: var(--muted); }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--accent); color: #00142b; padding: 6px 14px;
+    border-radius: 6px; font-weight: 600; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    input, #toast { display: none; }
+    button { background: #fff; border-color: #bbb; color: #333; break-inside: avoid; }
+    button .g { color: #000; } button .c { color: #0050a0; } h2 { color: #0050a0; } p { color: #333; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Icônes du firmware openHASP</h1>
+  <p>Les 146 icônes Material Design de la police intégrée à openHASP 0.7 (Guition et autres), utilisables à toutes les tailles de police. Une autre icône MDI ne s'affiche pas sur la platine.</p>
+  <p>Dans un texte JSONL, elles s'écrivent <code></code> : <code>"text":" Lampe"</code>. Un clic copie le code.</p>
+  <input id="q" type="search" placeholder="Rechercher (anglais : door, light, fan…)" autofocus>
+</header>
+<main id="list"></main>
+<div id="toast"></div>
+<script src="js/schema.js"></script>
+<script src="js/render.js"></script>
+<script>
+  (function () {
+    'use strict';
+    const list = document.getElementById('list');
+    const toast = document.getElementById('toast');
+    let timer;
+    const hex = code => code.toString(16).toUpperCase();
+    function copy(text) {
+      const done = () => { toast.textContent = text + ' copié'; toast.classList.add('on'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('on'), 1200); };
+      // file:// et http ne donnent pas toujours navigator.clipboard : repli sur une zone de texte.
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, done);
+      else { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) { /* tant pis */ } t.remove(); done(); }
+    }
+    function show() {
+      const q = document.getElementById('q').value.trim().toLowerCase();
+      list.innerHTML = '';
+      OHE.ICON_GROUPS.forEach(g => {
+        const icons = g.icons.filter(([n, c]) => n.includes(q) || hex(c).toLowerCase().includes(q));
+        if (!icons.length) return;
+        const h = document.createElement('h2'); h.textContent = `${g.title} (${icons.length})`; list.appendChild(h);
+        const grid = document.createElement('div'); grid.className = 'grid';
+        icons.forEach(([name, code]) => {
+          const b = document.createElement('button');
+          b.title = `${name} — \\u${hex(code)} (MDI ${hex(0xF0000 + code - 0xE000)})`;
+          b.innerHTML = '<span class="g"></span><span class="n"></span><span class="c"></span>';
+          b.querySelector('.g').textContent = OHE.displayText(String.fromCharCode(code));
+          b.querySelector('.n').textContent = name;
+          b.querySelector('.c').textContent = '\\u' + hex(code);
+          b.addEventListener('click', () => copy('\\u' + hex(code)));
+          grid.appendChild(b);
+        });
+        list.appendChild(grid);
+      });
+      if (!list.children.length) list.innerHTML = '<p class="vide">Aucune icône.</p>';
+    }
+    document.getElementById('q').addEventListener('input', show);
+    show();
+  })();
+</script>
+</body>
+</html>
